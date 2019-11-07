@@ -17,12 +17,12 @@ object Calls {
 
   final case class Empty()
 
-  implicit lazy val emptyCodec: JsonValueCodec[Empty] =
+  implicit val emptyCodec: JsonValueCodec[Empty] =
     JsonCodecMaker.make[Empty](CodecMakerConfig)
 
   final case class PidResponse(pid: Int)
 
-  implicit lazy val pidResponseCodec: JsonValueCodec[PidResponse] =
+  implicit val pidResponseCodec: JsonValueCodec[PidResponse] =
     JsonCodecMaker.make[PidResponse](CodecMakerConfig)
 
   private lazy val isNativeImage: Boolean =

@@ -43,7 +43,7 @@ object RemoteException {
       Repr(helper(t).toVector)
     }
 
-    implicit lazy val codec: JsonValueCodec[Repr] =
+    implicit val codec: JsonValueCodec[Repr] =
       JsonCodecMaker.make[Repr](CodecMakerConfig)
   }
 }

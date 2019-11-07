@@ -57,7 +57,7 @@ object JsonRpcMessage {
   }
 
   object Request {
-    implicit lazy val codec: JsonValueCodec[Request] =
+    implicit val codec: JsonValueCodec[Request] =
       JsonCodecMaker.make[Request](CodecMakerConfig)
 
     def apply(id: String, method: String, params: Option[RawJson]): Request =
@@ -77,7 +77,7 @@ object JsonRpcMessage {
   }
 
   object Notification {
-    implicit lazy val codec: JsonValueCodec[Notification] =
+    implicit val codec: JsonValueCodec[Notification] =
       JsonCodecMaker.make[Notification](CodecMakerConfig)
 
     def apply(
@@ -104,7 +104,7 @@ object JsonRpcMessage {
   }
 
   object Response {
-    implicit lazy val codec: JsonValueCodec[Response] =
+    implicit val codec: JsonValueCodec[Response] =
       JsonCodecMaker.make[Response](CodecMakerConfig)
 
     def apply(
@@ -150,7 +150,7 @@ object JsonRpcMessage {
     )
 
     object Error {
-      implicit lazy val codec: JsonValueCodec[Error] =
+      implicit val codec: JsonValueCodec[Error] =
         JsonCodecMaker.make[Error](CodecMakerConfig)
     }
   }

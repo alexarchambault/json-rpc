@@ -233,7 +233,7 @@ object ReaderThread {
 
   private final case class Probe(method: Option[String], id: Option[String])
   private object Probe {
-    implicit lazy val codec: JsonValueCodec[Probe] =
+    implicit val codec: JsonValueCodec[Probe] =
       JsonCodecMaker.make[Probe](CodecMakerConfig)
   }
 
