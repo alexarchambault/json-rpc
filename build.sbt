@@ -28,8 +28,7 @@ lazy val Deps = new {
 }
 
 lazy val shared = Def.settings(
-  scalaVersion := ScalaVersion.scala213,
-  crossScalaVersions := Seq(ScalaVersion.scala213, ScalaVersion.scala212),
+  sonatypeProfileName := "io.github.alexarchambault"
 )
 
 lazy val `json-rpc` = project
