@@ -1,6 +1,6 @@
 
 import sbt.complete.Parser
-import sbt.Keys.commands
+import sbt.Keys.{commands, crossScalaVersions, scalaVersion}
 import sbt.{AutoPlugin, Command}
 
 object ScalaVersionPlugin extends AutoPlugin {
@@ -38,7 +38,9 @@ object ScalaVersionPlugin extends AutoPlugin {
         case Right(cmd) => cmd()
         case Left(msg) => throw sys.error(s"Invalid command: $cmd0\n$msg")
       }
-    }
+    },
+    scalaVersion := ScalaVersion.versions.head,
+    crossScalaVersions := ScalaVersion.versions
   )
 
 }
