@@ -14,9 +14,14 @@ inThisBuild(List(
 ))
 
 
+lazy val shared = Def.settings(
+  scalaVersion := ScalaVersion.scala213,
+  crossScalaVersions := Seq(ScalaVersion.scala213, ScalaVersion.scala212),
+)
+
 lazy val `json-rpc` = project
   .settings(
-    Settings.shared,
+    shared,
     libraryDependencies ++= Seq(
       Deps.jsoniterScala,
       Deps.jsoniterScalaMacros % Provided,
@@ -26,14 +31,14 @@ lazy val `json-rpc` = project
 
 lazy val `ipc-socket-svm` = project
   .settings(
-    Settings.shared,
+    shared,
     libraryDependencies += Deps.svm % Provided
   )
 
 lazy val `json-rpc-ipc` = project
   .dependsOn(`ipc-socket-svm`, `json-rpc`)
   .settings(
-    Settings.shared,
+    shared,
     libraryDependencies ++= Seq(
       Deps.ipcSocket,
       Deps.jsoniterScalaMacros % Provided
@@ -44,7 +49,7 @@ lazy val `json-rpc-demo` = project
   .dependsOn(`json-rpc-ipc`)
   .enablePlugins(GraalVMNativeImagePlugin, PackPlugin)
   .settings(
-    Settings.shared,
+    shared,
     libraryDependencies ++= Seq(
       Deps.caseApp,
       Deps.jsoniterScalaMacros % Provided,
@@ -80,6 +85,6 @@ lazy val `json-rpc-root` = project
     `json-rpc-demo`
   )
   .settings(
-    Settings.shared,
+    shared,
     skip.in(publish) := true
   )
