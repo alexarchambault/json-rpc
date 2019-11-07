@@ -21,8 +21,11 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import com.oracle.svm.core.os.IsDefined;
 import com.oracle.svm.core.posix.headers.Socket;
 import com.oracle.svm.core.posix.headers.Unistd;
+import org.graalvm.nativeimage.Platform;
+import org.graalvm.nativeimage.Platforms;
 import org.graalvm.nativeimage.StackValue;
 import org.graalvm.nativeimage.UnmanagedMemory;
 import org.graalvm.nativeimage.c.struct.SizeOf;
@@ -71,6 +74,11 @@ public class UnixDomainSocket extends java.net.Socket {
 
   static final String HEXES = "0123456789ABCDEF";
 
+  @Platforms(Platform.DARWIN.class)
+  private void maybeSetLen(SocketExtras.sockaddr address, int len) {
+    address.setLen(len);
+  }
+
   public void connect(String path) throws IOException {
     int extra;
     if (addOne())
@@ -88,8 +96,10 @@ public class UnixDomainSocket extends java.net.Socket {
     SocketExtras.sockaddr address0 = UnmanagedMemory.calloc(len);
     try {
       address0.setFamily(Socket.AF_LOCAL());
-      // FIXME Better length in case of non ascii chars?
-      address0.setLen(path.length() + extra);
+      if (IsDefined.isDarwin()) {
+        // FIXME Better length in case of non ascii chars?
+        maybeSetLen(address0, path.length() + extra);
+      }
       CTypeConversion.toCString(path, address0.sa_data(),  WordFactory.unsigned(path.length() + extra));
 
       if (printSockAddr()) {
