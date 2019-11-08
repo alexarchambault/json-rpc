@@ -6,7 +6,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import com.typesafe.scalalogging.Logger
 
 import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 final class WriterThread(out: OutputStream) extends Thread("jsonrpc-writer") {
   setDaemon(true)
@@ -32,6 +32,13 @@ final class WriterThread(out: OutputStream) extends Thread("jsonrpc-writer") {
             out.write(data)
             out.flush()
           }
+          log.whenErrorEnabled {
+            res match {
+              case Success(_) =>
+              case Failure(t) =>
+                log.error("Error writing message", t)
+            }
+          }
           promise.complete(res)
         }
 
@@ -41,7 +48,9 @@ final class WriterThread(out: OutputStream) extends Thread("jsonrpc-writer") {
         })
           elem match {
             case Data(_, p) =>
-              p.complete(Failure(new IOException("Connection is closed")))
+              val ex = new IOException("Connection is closed")
+              log.error("Error writing message", ex)
+              p.complete(Failure(ex))
             case End =>
           }
       }

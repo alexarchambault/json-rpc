@@ -39,7 +39,7 @@ final class JsonRpc(
   private val readerThread = new ReaderThread(
     connection.getInputStream,
     onMessage0,
-    b => writerThread.write(b) // discarding a Future here
+    b => writerThread.write(b) // discarding a Future here, but WriterThread should log in case of failure
   )
   readerThread.start()
 
