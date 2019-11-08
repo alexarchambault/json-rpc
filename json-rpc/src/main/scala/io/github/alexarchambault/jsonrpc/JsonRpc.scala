@@ -12,8 +12,7 @@ import scala.util.{Failure, Success}
 
 final class JsonRpc(
   connection: Socket,
-  onMessage: JsonRpcMessage => Either[JsonRpcError, Unit],
-  exceptionHandler: PartialFunction[Throwable, Unit] = PartialFunction.empty
+  onMessage: JsonRpcMessage => Either[JsonRpcError, Unit]
 ) extends JsonRpcConnection {
 
   connection.setSoTimeout(5000)

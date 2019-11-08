@@ -19,8 +19,7 @@ import scala.util.{Failure, Success, Try}
 final class ReaderThread(
   in: InputStream,
   onMessage: JsonRpcMessage => Either[JsonRpcError, Unit],
-  write: Array[Byte] => Unit,
-  exceptionHandler: PartialFunction[Throwable, Unit] = PartialFunction.empty
+  write: Array[Byte] => Unit
 ) extends Thread("jsonrpc-reader") {
   setDaemon(true)
 
@@ -130,7 +129,10 @@ final class ReaderThread(
         } catch {
           case _: SocketTimeoutException => // it's ok
         }
-    } catch exceptionHandler finally {
+    } catch {
+      case t: Throwable =>
+        log.error("Caught exception", t)
+    } finally {
       shutdown()
     }
 
