@@ -156,27 +156,27 @@ object Master {
   def apply(
     mainClass: String,
     args: Seq[String],
-    javaCalls: Seq[JavaCall[_, _]]
+    calls: Seq[Call[_, _]]
   )(implicit ec: ExecutionContext): Master =
     Master(
       currentClassPath(),
       mainClass,
       args,
-      javaCalls
+      calls
     )
 
   def apply(
     initialClassPath: Seq[File],
     mainClass: String,
     args: Seq[String],
-    javaCalls: Seq[JavaCall[_, _]]
+    calls: Seq[Call[_, _]]
   )(implicit ec: ExecutionContext): Master =
     new Master(
       initialClassPath,
       mainClass,
       args,
       onMessage = {
-        val f = JavaCall.onMessage(javaCalls)
+        val f = Call.onMessage(calls)
         conn => msg => f(conn, msg)
       }
     )

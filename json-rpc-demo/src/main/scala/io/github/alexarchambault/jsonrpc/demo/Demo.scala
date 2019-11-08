@@ -2,7 +2,7 @@ package io.github.alexarchambault.jsonrpc.demo
 
 import caseapp._
 import com.typesafe.scalalogging.Logger
-import io.github.alexarchambault.jsonrpc.{JavaCall, JsonRpcConnection, Master}
+import io.github.alexarchambault.jsonrpc.{Call, JsonRpcConnection, Master}
 
 import scala.concurrent.{Await, ExecutionContext}
 import scala.concurrent.duration.Duration
@@ -10,7 +10,7 @@ import scala.concurrent.duration.Duration
 object Demo extends CaseApp[Options] {
   private val log = Logger(classOf[Demo])
 
-  private class TestCall[A, B](call: JavaCall[A, B], input: A) {
+  private class TestCall[A, B](call: Call[A, B], input: A) {
     protected def check(b: B): Unit = ()
     def remote(conn: JsonRpcConnection)(implicit ec: ExecutionContext) =
       call.remote(conn, input).map { b =>

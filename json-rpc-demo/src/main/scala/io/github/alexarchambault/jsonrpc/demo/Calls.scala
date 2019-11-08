@@ -6,7 +6,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.oracle.svm.core.posix.headers.Unistd
 import com.typesafe.scalalogging.Logger
-import io.github.alexarchambault.jsonrpc.{JavaCall, Server}
+import io.github.alexarchambault.jsonrpc.{Call, Server}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -48,7 +48,7 @@ object Calls {
       .takeWhile(_ != '@')
       .toInt
 
-  def pid(implicit ec: ExecutionContext) = JavaCall[Empty, PidResponse]("pid") {
+  def pid(implicit ec: ExecutionContext) = Call[Empty, PidResponse]("pid") {
     (_, _) =>
       Future {
         val pid0 = if (isNativeImage) Unistd.getpid() else getPid()
@@ -57,7 +57,7 @@ object Calls {
       }
   }
 
-  def large(implicit ec: ExecutionContext) = JavaCall[Large, LargeResponse]("large") {
+  def large(implicit ec: ExecutionContext) = Call[Large, LargeResponse]("large") {
     (_, input) =>
       Future {
         log.debug(s"Large: ${input.length}")
@@ -79,13 +79,13 @@ object Calls {
       }
   }
 
-  val fail = JavaCall[Empty, Empty]("fail") {
+  val fail = Call[Empty, Empty]("fail") {
     (_, _) =>
       Future.failed(new Exception("foo"))
   }
 
 
-  def calls(implicit ec: ExecutionContext) = Seq[JavaCall[_, _]](
+  def calls(implicit ec: ExecutionContext) = Seq[Call[_, _]](
     pid,
     large,
     fail
@@ -93,7 +93,7 @@ object Calls {
 
   object Special {
 
-    val clientStop = JavaCall[Empty, Empty]("stop") {
+    val clientStop = Call[Empty, Empty]("stop") {
       (_, _) =>
         ???
     }

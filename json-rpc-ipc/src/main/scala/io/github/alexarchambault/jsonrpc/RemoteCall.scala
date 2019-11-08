@@ -7,7 +7,7 @@ import com.github.plokhotnyuk.jsoniter_scala.core._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
-trait RemoteJavaCall[A, B] {
+trait RemoteCall[A, B] {
   def methodName: String
   def inputCodec: JsonValueCodec[A]
   def outputCodec: JsonValueCodec[B]
@@ -44,22 +44,22 @@ trait RemoteJavaCall[A, B] {
   def remote(connection: JsonRpcConnection)(implicit ec: ExecutionContext, ev: Unit =:= A): Future[B] =
     remote(connection, ev(()))
 
-  def withImplem(method: (JsonRpcConnection, A) => Future[B]): JavaCall[A, B] =
-    JavaCall(methodName, inputCodec, outputCodec, method)
+  def withImplem(method: (JsonRpcConnection, A) => Future[B]): Call[A, B] =
+    Call(methodName, inputCodec, outputCodec, method)
 }
 
-object RemoteJavaCall {
+object RemoteCall {
 
   private final case class PureRemoteCall[A, B](
     methodName: String,
     inputCodec: JsonValueCodec[A],
     outputCodec: JsonValueCodec[B]
-  ) extends RemoteJavaCall[A, B]
+  ) extends RemoteCall[A, B]
 
   def apply[A, B](methodName: String)(implicit
     inputCodec: JsonValueCodec[A],
     outputCodec: JsonValueCodec[B]
-  ): RemoteJavaCall[A, B] =
+  ): RemoteCall[A, B] =
     PureRemoteCall(methodName, inputCodec, outputCodec)
 
 }
