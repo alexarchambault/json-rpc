@@ -68,10 +68,7 @@ final class Client(
     log.debug("Creating JsonRpc")
     jsonRpc = new JsonRpc(
       socket,
-      msg => onMessage0(msg),
-      exceptionHandler = {
-        case e: ErrnoException if e.value == 9 =>
-      }
+      msg => onMessage0(msg)
     )
     log.debug("Created JsonRpc")
     socketOpt = Some(socket)

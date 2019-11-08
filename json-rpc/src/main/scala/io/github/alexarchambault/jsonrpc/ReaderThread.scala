@@ -19,8 +19,7 @@ import scala.util.{Failure, Success, Try}
 final class ReaderThread(
   in: InputStream,
   onMessage: JsonRpcMessage => Either[JsonRpcError, Unit],
-  write: Array[Byte] => Unit,
-  exceptionHandler: PartialFunction[Throwable, Unit] = PartialFunction.empty
+  write: Array[Byte] => Unit
 ) extends Thread("jsonrpc-reader") {
   setDaemon(true)
 
@@ -130,7 +129,10 @@ final class ReaderThread(
         } catch {
           case _: SocketTimeoutException => // it's ok
         }
-    } catch exceptionHandler finally {
+    } catch {
+      case t: Throwable =>
+        log.error("Caught exception", t)
+    } finally {
       shutdown()
     }
 
@@ -159,7 +161,7 @@ final class ReaderThread(
     log.debug(s"Header: $str")
     if (str.startsWith(ContentLengthPrefix)) {
       val idx = str.indexWhere(!_.isSpaceChar, ContentLengthPrefix.length)
-      if (idx >= 0)
+      idx >= 0 && {
         try {
           contentLength = str.substring(idx).toInt
           true
@@ -167,8 +169,7 @@ final class ReaderThread(
           case _: NumberFormatException =>
             false
         }
-      else
-        false
+      }
     } else
       str.startsWith(ContentTypePrefix)
   }
@@ -195,7 +196,7 @@ object ReaderThread {
     def size: Int =
       size0
     def grow(capacity: Int): Unit =
-      if (capacity < array.length) {
+      if (capacity > array.length) {
         var newCapacity = array.length << 1
         if (newCapacity < capacity)
           newCapacity = capacity
@@ -234,7 +235,7 @@ object ReaderThread {
   private final case class Probe(method: Option[String], id: Option[String])
   private object Probe {
     implicit val codec: JsonValueCodec[Probe] =
-      JsonCodecMaker.make[Probe](CodecMakerConfig)
+      JsonCodecMaker.make(CodecMakerConfig)
   }
 
   private def deserializeJsonMessage(buf: Array[Byte], offset: Int, len: Int): Either[String, JsonRpcMessage] =

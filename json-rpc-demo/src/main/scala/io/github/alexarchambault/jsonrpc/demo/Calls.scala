@@ -2,77 +2,107 @@ package io.github.alexarchambault.jsonrpc.demo
 
 import java.lang.management.ManagementFactory
 
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.oracle.svm.core.posix.headers.Unistd
 import com.typesafe.scalalogging.Logger
-import io.github.alexarchambault.jsonrpc.{JavaCall, Server}
+import io.github.alexarchambault.jsonrpc.{Call, RemoteCall}
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Try
 
 object Calls {
 
-  private lazy val log = Logger(getClass)
-
-  final case class Empty()
-
-  implicit val emptyCodec: JsonValueCodec[Empty] =
-    JsonCodecMaker.make[Empty](CodecMakerConfig)
-
   final case class PidResponse(pid: Int)
 
-  implicit val pidResponseCodec: JsonValueCodec[PidResponse] =
-    JsonCodecMaker.make[PidResponse](CodecMakerConfig)
+  final case class Large(length: Int)
 
-  private lazy val isNativeImage: Boolean =
-    sys.props
-      .get("org.graalvm.nativeimage.imagecode")
-      .contains("runtime")
+  final case class LargeResponse(dummy: String) {
+    override def toString = s"LargeResponse([${dummy.length} characters])"
+  }
 
-  private def getPid(): Int =
-    ManagementFactory.getRuntimeMXBean
-      .getName
-      .takeWhile(_ != '@')
-      .toInt
 
-  def pid(implicit ec: ExecutionContext) = JavaCall[Empty, PidResponse]("pid") {
-    (_, _) =>
-      Future {
-        val pid0 = if (isNativeImage) Unistd.getpid() else getPid()
-        log.debug(s"PID: $pid0")
-        PidResponse(pid0)
+  private object Codecs {
+
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import com.github.plokhotnyuk.jsoniter_scala.macros._
+
+    implicit val unitCodec: JsonValueCodec[Unit] = {
+      final case class Empty()
+      val empty = Empty()
+      val emptyCodec = JsonCodecMaker.make[Empty](CodecMakerConfig)
+
+      new JsonValueCodec[Unit] {
+        def decodeValue(in: JsonReader, default: Unit) = emptyCodec.decodeValue(in, empty)
+        def encodeValue(x: Unit, out: JsonWriter) = emptyCodec.encodeValue(empty, out)
+        def nullValue = ()
       }
-  }
-
-  val fail = JavaCall[Empty, Empty]("fail") {
-    (_, _) =>
-      Future.failed(new Exception("foo"))
-  }
-
-
-  def calls(implicit ec: ExecutionContext) = Seq[JavaCall[_, _]](
-    pid,
-    fail
-  )
-
-  object Special {
-
-    val clientStop = JavaCall[Empty, Empty]("stop") {
-      (_, _) =>
-        ???
     }
 
-    def serverStop(server: => Server) = clientStop.withImplem {
+    implicit val pidResponseCodec: JsonValueCodec[PidResponse] =
+      JsonCodecMaker.make(CodecMakerConfig)
+
+    implicit val largeCodec: JsonValueCodec[Large] =
+      JsonCodecMaker.make(CodecMakerConfig)
+
+    implicit val largeResponseCodec: JsonValueCodec[LargeResponse] =
+      JsonCodecMaker.make(CodecMakerConfig)
+
+  }
+
+  import Codecs._
+
+
+  val pid = RemoteCall[Unit, PidResponse]("pid")
+  val large = RemoteCall[Large, LargeResponse]("large")
+  val fail = RemoteCall[Unit, Unit]("fail")
+
+
+  private lazy val log = Logger(getClass)
+
+  def calls(implicit ec: ExecutionContext) = Seq[Call[_, _]](
+    pid.withImplem {
+
+      lazy val isNativeImage: Boolean =
+        sys.props
+          .get("org.graalvm.nativeimage.imagecode")
+          .contains("runtime")
+
+      def getPid(): Int =
+        ManagementFactory.getRuntimeMXBean
+          .getName
+          .takeWhile(_ != '@')
+          .toInt
+
       (_, _) =>
-        Future.fromTry(
-          Try {
-            server.stop()
-            Empty()
+        Future {
+          val pid0 = if (isNativeImage) Unistd.getpid() else getPid()
+          log.debug(s"PID: $pid0")
+          PidResponse(pid0)
+        }
+    },
+    large.withImplem {
+      (_, input) =>
+        Future {
+          log.debug(s"Large: ${input.length}")
+          var elem = "*"
+          var i = 0
+          val b = new StringBuilder
+          var rem = input.length
+          while (rem > 0) {
+            if ((rem & 1) == 1) {
+              b.append(elem)
+            }
+            rem = rem >> 1
+            elem = elem + elem
+            i += 1
           }
-        )
+          val s = b.result()
+          assert(s.length == input.length)
+          LargeResponse(s)
+        }
+    },
+    fail.withImplem {
+      (_, _) =>
+        Future.failed(new Exception("foo"))
     }
-
-  }
+  )
 
 }

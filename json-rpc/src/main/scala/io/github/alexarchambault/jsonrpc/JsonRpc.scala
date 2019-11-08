@@ -12,8 +12,7 @@ import scala.util.{Failure, Success}
 
 final class JsonRpc(
   connection: Socket,
-  onMessage: JsonRpcMessage => Either[JsonRpcError, Unit],
-  exceptionHandler: PartialFunction[Throwable, Unit] = PartialFunction.empty
+  onMessage: JsonRpcMessage => Either[JsonRpcError, Unit]
 ) extends JsonRpcConnection {
 
   connection.setSoTimeout(5000)
@@ -40,7 +39,7 @@ final class JsonRpc(
   private val readerThread = new ReaderThread(
     connection.getInputStream,
     onMessage0,
-    b => writerThread.write(b) // discarding a Future here
+    b => writerThread.write(b) // discarding a Future here, but WriterThread should log in case of failure
   )
   readerThread.start()
 

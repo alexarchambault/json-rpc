@@ -166,13 +166,13 @@ object Server {
   def apply(
     socketFile: File,
     listeningFile: File,
-    javaCalls: Seq[JavaCall[_, _]]
+    calls: Seq[Call[_, _]]
   )(implicit ec: ExecutionContext): Server =
     new Server(
       socketFile,
       listeningFile,
       {
-        val f = JavaCall.onMessage(javaCalls)
+        val f = Call.onMessage(calls)
         (c, m) => f(c, m).getOrElse(Client.methodNotFoundError(m).toLeft(()))
       }
     )
@@ -187,13 +187,13 @@ object Server {
     )
 
   def apply(
-    javaCalls: Seq[JavaCall[_, _]]
+    calls: Seq[Call[_, _]]
   )(implicit ec: ExecutionContext): Server =
     new Server(
       defaultSocketFile(),
       defaultListeningFile(),
       {
-        val f = JavaCall.onMessage(javaCalls)
+        val f = Call.onMessage(calls)
         (c, m) => f(c, m).getOrElse(Client.methodNotFoundError(m).toLeft(()))
       }
     )

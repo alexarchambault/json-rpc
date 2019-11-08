@@ -8,12 +8,12 @@ import io.github.alexarchambault.jsonrpc.JsonRpcMessage.RawJson
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
-final case class JavaCall[A, B](
+final case class Call[A, B](
   methodName: String,
   inputCodec: JsonValueCodec[A],
   outputCodec: JsonValueCodec[B],
   local: (JsonRpcConnection, A) => Future[B]
-) extends RemoteJavaCall[A, B] {
+) extends RemoteCall[A, B] {
 
   def local(connection: JsonRpcConnection)(implicit ec: ExecutionContext, ev: Unit =:= A): Future[B] =
     local(connection, ev(()))
@@ -29,10 +29,10 @@ final case class JavaCall[A, B](
   }
 }
 
-object JavaCall {
+object Call {
 
-  def apply[A: JsonValueCodec, B: JsonValueCodec](methodName: String)(f: (JsonRpcConnection, A) => Future[B]): JavaCall[A, B] =
-    JavaCall(
+  def apply[A: JsonValueCodec, B: JsonValueCodec](methodName: String)(f: (JsonRpcConnection, A) => Future[B]): Call[A, B] =
+    Call(
       methodName,
       implicitly[JsonValueCodec[A]],
       implicitly[JsonValueCodec[B]],
@@ -40,14 +40,14 @@ object JavaCall {
     )
 
 
-  def onMessage(calls: Seq[JavaCall[_, _]])(implicit ec: ExecutionContext): (JsonRpcConnection, JsonRpcMessage) => Option[Either[JsonRpcError, Unit]] = {
+  def onMessage(calls: Seq[Call[_, _]])(implicit ec: ExecutionContext): (JsonRpcConnection, JsonRpcMessage) => Option[Either[JsonRpcError, Unit]] = {
 
-    val map = calls.map(c => c.methodName -> c).toMap[String, JavaCall[_, _]]
+    val map = calls.map(c => c.methodName -> c).toMap[String, Call[_, _]]
 
     {
       case (conn, req: JsonRpcMessage.Request) =>
         map.get(req.method).map { c =>
-          c.localFromMessage(conn, req).right.map { futureResp =>
+          c.localFromMessage(conn, req).map { futureResp =>
             futureResp.onComplete { t =>
               val resp = t match {
                 case Success(resp) => resp
