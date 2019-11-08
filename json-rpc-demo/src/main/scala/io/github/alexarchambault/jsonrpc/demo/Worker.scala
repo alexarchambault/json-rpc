@@ -10,7 +10,7 @@ object Worker {
   def main(args: Array[String]): Unit = {
     log.debug("Worker starting")
     implicit val ec = ExecutionContext.global
-    lazy val server: Server = Server(Calls.calls ++ Seq(Calls.Special.serverStop(server)))
+    lazy val server: Server = Server(Calls.calls)
     server.start()
     server.join()
     log.debug("Worker exiting")
