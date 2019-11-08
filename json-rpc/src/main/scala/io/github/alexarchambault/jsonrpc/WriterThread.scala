@@ -15,36 +15,40 @@ final class WriterThread(out: OutputStream) extends Thread("jsonrpc-writer") {
 
   @volatile private var queue = new LinkedBlockingQueue[Element]
 
-  override def run(): Unit = {
-    val queue0 = queue
-    if (queue0 != null) {
-      var elem: Element = null
-      while ({
-        elem = queue0.take()
-        elem != End
-      }) {
-        val (data, promise) = elem match {
-          case Data(b, p) => (b, p)
-          case End => sys.error("Can't happen")
+  override def run(): Unit =
+    try {
+      val queue0 = queue
+      if (queue0 != null) {
+        var elem: Element = null
+        while ( {
+          elem = queue0.take()
+          elem != End
+        }) {
+          val (data, promise) = elem match {
+            case Data(b, p) => (b, p)
+            case End => sys.error("Can't happen")
+          }
+          val res = Try {
+            out.write(data)
+            out.flush()
+          }
+          promise.complete(res)
         }
-        val res = Try {
-          out.write(data)
-          out.flush()
-        }
-        promise.complete(res)
-      }
 
-      while ({
-        elem = queue0.poll()
-        elem != null
-      })
-        elem match {
-          case Data(b, p) => (b, p)
-            p.complete(Failure(new IOException("Connection is closed")))
-          case End =>
-        }
+        while ( {
+          elem = queue0.poll()
+          elem != null
+        })
+          elem match {
+            case Data(_, p) =>
+              p.complete(Failure(new IOException("Connection is closed")))
+            case End =>
+          }
+      }
+    } catch {
+      case t: Throwable =>
+        log.error("Caught exception", t)
     }
-  }
 
   def write(b: Array[Byte]): Future[Unit] = {
     // FIXME Pretty sure the mechanism to fail this when the connection is closed is flaky
