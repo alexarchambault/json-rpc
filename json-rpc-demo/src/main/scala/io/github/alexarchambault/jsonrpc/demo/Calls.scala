@@ -25,6 +25,18 @@ object Calls {
   implicit val pidResponseCodec: JsonValueCodec[PidResponse] =
     JsonCodecMaker.make(CodecMakerConfig)
 
+  final case class Large(length: Int)
+
+  implicit val largeCodec: JsonValueCodec[Large] =
+    JsonCodecMaker.make(CodecMakerConfig)
+
+  final case class LargeResponse(dummy: String) {
+    override def toString = s"LargeResponse([${dummy.length} characters])"
+  }
+
+  implicit val largeResponseCodec: JsonValueCodec[LargeResponse] =
+    JsonCodecMaker.make(CodecMakerConfig)
+
   private lazy val isNativeImage: Boolean =
     sys.props
       .get("org.graalvm.nativeimage.imagecode")
@@ -45,6 +57,28 @@ object Calls {
       }
   }
 
+  def large(implicit ec: ExecutionContext) = JavaCall[Large, LargeResponse]("large") {
+    (_, input) =>
+      Future {
+        log.debug(s"Large: ${input.length}")
+        var elem = "*"
+        var i = 0
+        val b = new StringBuilder
+        var rem = input.length
+        while (rem > 0) {
+          if ((rem & 1) == 1) {
+            b.append(elem)
+          }
+          rem = rem >> 1
+          elem = elem + elem
+          i += 1
+        }
+        val s = b.result()
+        assert(s.length == input.length)
+        LargeResponse(s)
+      }
+  }
+
   val fail = JavaCall[Empty, Empty]("fail") {
     (_, _) =>
       Future.failed(new Exception("foo"))
@@ -53,6 +87,7 @@ object Calls {
 
   def calls(implicit ec: ExecutionContext) = Seq[JavaCall[_, _]](
     pid,
+    large,
     fail
   )
 

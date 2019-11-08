@@ -40,6 +40,7 @@ object SimpleTest extends TestSuite {
       }
 
       "pid" - run("pid")
+      "large" - run("large")
     }
 
     "hybrid" - {
@@ -68,6 +69,7 @@ object SimpleTest extends TestSuite {
       }
 
       "pid" - run("pid")
+      "large" - run("large")
     }
   }
 

@@ -196,7 +196,7 @@ object ReaderThread {
     def size: Int =
       size0
     def grow(capacity: Int): Unit =
-      if (capacity < array.length) {
+      if (capacity > array.length) {
         var newCapacity = array.length << 1
         if (newCapacity < capacity)
           newCapacity = capacity

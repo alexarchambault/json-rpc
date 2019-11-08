@@ -25,6 +25,8 @@ object Demo extends CaseApp[Options] {
     def methodName = call.methodName
   }
 
+  private def largeMessageLength = 100 * 1024
+
   def run(options: Options, args: RemainingArgs): Unit = {
 
     if (args.all.nonEmpty)
@@ -35,6 +37,11 @@ object Demo extends CaseApp[Options] {
     val call: TestCall[_, _] = options.call match {
       case "pid" => new TestCall(Calls.pid, Calls.Empty())
       case "fail" => new TestCall(Calls.fail, Calls.Empty())
+      case "large" =>
+        new TestCall(Calls.large, Calls.Large(largeMessageLength)) {
+          override protected def check(b: Calls.LargeResponse): Unit =
+            assert(b.dummy.length == largeMessageLength)
+        }
       case other =>
         sys.error(s"Unrecognized method: '$other'")
     }
