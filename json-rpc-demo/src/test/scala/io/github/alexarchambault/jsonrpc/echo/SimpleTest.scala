@@ -27,38 +27,47 @@ object SimpleTest extends TestSuite {
 
   val tests = Tests {
     "jvm" - {
-      val launcher = packDir.resolve("bin/demo")
-      Predef.assert(Files.isRegularFile(launcher), s"$launcher not found")
 
-      val b = new ProcessBuilder(s"$launcher", s"--count=$roundTripCount")
-      b.inheritIO()
-      val p = b.start()
-      val retCode = p.waitFor()
-      assert(retCode == 0)
+      def run(call: String): Unit = {
+        val launcher = packDir.resolve("bin/demo")
+        Predef.assert(Files.isRegularFile(launcher), s"$launcher not found")
+
+        val b = new ProcessBuilder(s"$launcher", s"--count=$roundTripCount", s"--call=$call")
+        b.inheritIO()
+        val p = b.start()
+        val retCode = p.waitFor()
+        assert(retCode == 0)
+      }
+
+      "pid" - run("pid")
     }
 
     "hybrid" - {
-      Predef.assert(Files.isRegularFile(nativeLauncher), s"$nativeLauncher not found")
+      def run(call: String): Unit = {
+        Predef.assert(Files.isRegularFile(nativeLauncher), s"$nativeLauncher not found")
 
-      val libs = packDir.resolve("lib")
-      var s: Stream[Path] = null
-      val cp = try {
-        s = Files.list(libs)
-        s.iterator()
-          .asScala
-          .filter(Files.isRegularFile(_))
-          .map(_.toString)
-          .mkString(File.pathSeparator)
-      } finally {
-        if (s != null)
-          s.close()
+        val libs = packDir.resolve("lib")
+        var s: Stream[Path] = null
+        val cp = try {
+          s = Files.list(libs)
+          s.iterator()
+            .asScala
+            .filter(Files.isRegularFile(_))
+            .map(_.toString)
+            .mkString(File.pathSeparator)
+        } finally {
+          if (s != null)
+            s.close()
+        }
+
+        val b = new ProcessBuilder(s"$nativeLauncher", s"-Djava.class.path=$cp", s"--count=$roundTripCount", s"--call=$call")
+        b.inheritIO()
+        val p = b.start()
+        val retCode = p.waitFor()
+        assert(retCode == 0)
       }
 
-      val b = new ProcessBuilder(s"$nativeLauncher", s"-Djava.class.path=$cp", s"--count=$roundTripCount")
-      b.inheritIO()
-      val p = b.start()
-      val retCode = p.waitFor()
-      assert(retCode == 0)
+      "pid" - run("pid")
     }
   }
 

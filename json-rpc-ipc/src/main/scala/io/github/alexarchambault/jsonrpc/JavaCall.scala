@@ -47,7 +47,7 @@ object JavaCall {
     {
       case (conn, req: JsonRpcMessage.Request) =>
         map.get(req.method).map { c =>
-          c.localFromMessage(conn, req).right.map { futureResp =>
+          c.localFromMessage(conn, req).map { futureResp =>
             futureResp.onComplete { t =>
               val resp = t match {
                 case Success(resp) => resp

@@ -159,7 +159,7 @@ final class ReaderThread(
     log.debug(s"Header: $str")
     if (str.startsWith(ContentLengthPrefix)) {
       val idx = str.indexWhere(!_.isSpaceChar, ContentLengthPrefix.length)
-      if (idx >= 0)
+      idx >= 0 && {
         try {
           contentLength = str.substring(idx).toInt
           true
@@ -167,8 +167,7 @@ final class ReaderThread(
           case _: NumberFormatException =>
             false
         }
-      else
-        false
+      }
     } else
       str.startsWith(ContentTypePrefix)
   }
@@ -234,7 +233,7 @@ object ReaderThread {
   private final case class Probe(method: Option[String], id: Option[String])
   private object Probe {
     implicit val codec: JsonValueCodec[Probe] =
-      JsonCodecMaker.make[Probe](CodecMakerConfig)
+      JsonCodecMaker.make(CodecMakerConfig)
   }
 
   private def deserializeJsonMessage(buf: Array[Byte], offset: Int, len: Int): Either[String, JsonRpcMessage] =
