@@ -64,11 +64,16 @@ jobs:
 
       - uses: actions/checkout@v1
 
-      - name: cache
+      - name: coursier cache (Linux)
         uses: actions/cache@v1
+        if: runner.OS == 'Linux'
         with:
-          path: ~/.cache
-          key: ${{ runner.OS }}-cache
+          path: ~/.cache/coursier
+          key: ${{ runner.OS }}-coursier-cache-${{ matrix.scala }}-${{ hashFiles('**/*.sbt') }} # -${{ hashFiles('project/**.scala') }} (fails for now)
+          restore-keys: |
+            ${{ runner.OS }}-coursier-cache-${{ matrix.scala }}-${{ hashFiles('**/*.sbt') }}-
+            ${{ runner.OS }}-coursier-cache-${{ matrix.scala }}-
+            ${{ runner.OS }}-coursier-cache-
 
       - uses: olafurpg/setup-scala@v5
 
