@@ -10,10 +10,7 @@ import scala.util.Try
 
 sealed abstract class JsonRpcMessage extends Product with Serializable {
   def jsonrpc: String
-  def raw: Array[Byte]
   def idOpt: Option[String]
-  final def serialize: Array[Byte] =
-    JsonRpcMessage.serializeMessage(raw)
 }
 
 object JsonRpcMessage {
@@ -50,8 +47,6 @@ object JsonRpcMessage {
     method: String,
     params: Option[RawJson]
   ) extends JsonRpcMessage {
-    def raw: Array[Byte] =
-      writeToArray(this)
     def idOpt: Option[String] =
       Some(id)
   }
@@ -70,8 +65,6 @@ object JsonRpcMessage {
     method: String,
     params: Option[RawJson]
   ) extends JsonRpcMessage {
-    def raw: Array[Byte] =
-      writeToArray(this)
     def idOpt: Option[String] =
       None
   }
@@ -97,8 +90,6 @@ object JsonRpcMessage {
     result: Option[RawJson],
     error: Option[Response.Error]
   ) extends JsonRpcMessage {
-    def raw: Array[Byte] =
-      writeToArray(this)
     def idOpt: Option[String] =
       id
   }
@@ -163,6 +154,17 @@ object JsonRpcMessage {
       "Content-Type: application/vscode-jsonrpc; charset=utf-8",
       ""
     ).mkString("", "\r\n", "\r\n").getBytes(StandardCharsets.UTF_8) ++ json
+  }
+
+  implicit final class Ops(private val msg: JsonRpcMessage) extends AnyVal {
+    def serialize: Array[Byte] = {
+      val raw = msg match {
+        case n: Notification => writeToArray(n)
+        case r: Request => writeToArray(r)
+        case r: Response => writeToArray(r)
+      }
+      JsonRpcMessage.serializeMessage(raw)
+    }
   }
 
 
