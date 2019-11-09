@@ -20,7 +20,7 @@ object JsonRpcMessage {
 
   def jsonRpcVersion = "2.0"
 
-  // from …
+  // adapted fromhttps://github.com/plokhotnyuk/jsoniter-scala/blob/209d918a030b188f064ee55505a6c47257731b4b/jsoniter-scala-macros/src/test/scala/com/github/plokhotnyuk/jsoniter_scala/macros/JsonCodecMakerSpec.scala#L645-L666
   final case class RawJson(bs: Array[Byte]) {
     override lazy val hashCode: Int = MurmurHash3.arrayHash(bs)
     override def equals(obj: Any): Boolean = obj match {
