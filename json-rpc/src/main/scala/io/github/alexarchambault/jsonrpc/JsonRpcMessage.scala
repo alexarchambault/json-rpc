@@ -7,6 +7,9 @@ import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.github.plokhotnyuk.jsoniter_scala.core._
 import scala.util.hashing.MurmurHash3
 import scala.util.Try
+import com.typesafe.scalalogging.Logger
+import scala.util.Failure
+import scala.util.Success
 
 sealed abstract class JsonRpcMessage extends Product with Serializable {
   def jsonrpc: String
@@ -52,9 +55,6 @@ object JsonRpcMessage {
   }
 
   object Request {
-    implicit val codec: JsonValueCodec[Request] =
-      JsonCodecMaker.make(CodecMakerConfig)
-
     def apply(id: String, method: String, params: Option[RawJson]): Request =
       Request(jsonRpcVersion, id, method, params)
   }
@@ -70,9 +70,6 @@ object JsonRpcMessage {
   }
 
   object Notification {
-    implicit val codec: JsonValueCodec[Notification] =
-      JsonCodecMaker.make(CodecMakerConfig)
-
     def apply(
       method: String,
       params: Option[RawJson]
@@ -95,9 +92,6 @@ object JsonRpcMessage {
   }
 
   object Response {
-    implicit val codec: JsonValueCodec[Response] =
-      JsonCodecMaker.make(CodecMakerConfig)
-
     def apply(
       id: Option[String],
       result: Option[RawJson]
@@ -139,11 +133,6 @@ object JsonRpcMessage {
       message: String,
       data: Option[RawJson] = None
     )
-
-    object Error {
-      implicit val codec: JsonValueCodec[Error] =
-        JsonCodecMaker.make(CodecMakerConfig)
-    }
   }
 
   private def serializeMessage(json: Array[Byte]): Array[Byte] = {
@@ -156,8 +145,24 @@ object JsonRpcMessage {
     ).mkString("", "\r\n", "\r\n").getBytes(StandardCharsets.UTF_8) ++ json
   }
 
+  private final case class Probe(method: Option[String], id: Option[String])
+
+  private object Codecs {
+    implicit val responseCodec: JsonValueCodec[Response] =
+      JsonCodecMaker.make[Response](CodecMakerConfig)
+    implicit val requestCodec: JsonValueCodec[Request] =
+      JsonCodecMaker.make[Request](CodecMakerConfig)
+    implicit val notificationCodec: JsonValueCodec[Notification] =
+      JsonCodecMaker.make[Notification](CodecMakerConfig)
+    implicit val errorCodec: JsonValueCodec[Response.Error] =
+      JsonCodecMaker.make[Response.Error](CodecMakerConfig)
+    implicit val probeCodec: JsonValueCodec[Probe] =
+      JsonCodecMaker.make[Probe](CodecMakerConfig)
+  }
+
   implicit final class Ops(private val msg: JsonRpcMessage) extends AnyVal {
     def serialize: Array[Byte] = {
+      import Codecs._
       val raw = msg match {
         case n: Notification => writeToArray(n)
         case r: Request => writeToArray(r)
@@ -167,5 +172,43 @@ object JsonRpcMessage {
     }
   }
 
+  private val log = Logger(classOf[JsonRpcMessage])
+
+  def deserialize(buf: Array[Byte], offset: Int, len: Int): Either[String, JsonRpcMessage] = {
+    import Codecs._
+    Try(readFromSubArray[Probe](buf, offset, offset + len)) match {
+      case Failure(t) =>
+        log.debug("Could not probe message", t)
+        Left("Malformed message")
+      case Success(check) =>
+        val hasMethod = check.method.nonEmpty
+        if (hasMethod) {
+          val hasId = check.id.nonEmpty
+          if (hasId)
+            Try(readFromSubArray[Request](buf, offset, offset + len)) match {
+              case Failure(t) =>
+                log.debug("Could not decode request", t)
+                Left("Malformed request")
+              case Success(req) =>
+                Right(req)
+            }
+          else
+            Try(readFromSubArray[Notification](buf, offset, offset + len)) match {
+              case Failure(t) =>
+                log.debug("Could not decode notification", t)
+                Left("Malformed notification")
+              case Success(notif) =>
+                Right(notif)
+            }
+        } else
+          Try(readFromSubArray[Response](buf, offset, offset + len)) match {
+            case Failure(t) =>
+              log.debug("Could not decode response", t)
+              Left("Malformed response")
+            case Success(resp) =>
+              Right(resp)
+          }
+    }
+  }
 
 }
