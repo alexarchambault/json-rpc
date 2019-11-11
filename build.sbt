@@ -44,6 +44,8 @@ lazy val `json-rpc` = project
 lazy val `ipc-socket-svm` = project
   .settings(
     shared,
+    crossPaths := false,
+    autoScalaLibrary := false,
     libraryDependencies += Deps.svm % Provided
   )
 
