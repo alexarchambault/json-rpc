@@ -80,7 +80,7 @@ jobs:
       - uses: olafurpg/setup-gpg@v2
 
       - name: Release
-        run: csbt scala212 publishLocal scala213 publishLocal && csbt ci-release
+        run: csbt scala212 publishLocal scala213 publishLocal && (csbt ci-release || csbt ci-release || csbt ci-release || csbt ci-release)
         env:
           PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
           PGP_SECRET: ${{ secrets.PGP_SECRET }}

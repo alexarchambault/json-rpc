@@ -37,13 +37,13 @@ object Calls {
     }
 
     implicit val pidResponseCodec: JsonValueCodec[PidResponse] =
-      JsonCodecMaker.make(CodecMakerConfig)
+      JsonCodecMaker.make[PidResponse](CodecMakerConfig)
 
     implicit val largeCodec: JsonValueCodec[Large] =
-      JsonCodecMaker.make(CodecMakerConfig)
+      JsonCodecMaker.make[Large](CodecMakerConfig)
 
     implicit val largeResponseCodec: JsonValueCodec[LargeResponse] =
-      JsonCodecMaker.make(CodecMakerConfig)
+      JsonCodecMaker.make[LargeResponse](CodecMakerConfig)
 
   }
 

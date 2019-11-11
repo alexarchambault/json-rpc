@@ -44,6 +44,6 @@ object RemoteException {
     }
 
     implicit val codec: JsonValueCodec[Repr] =
-      JsonCodecMaker.make(CodecMakerConfig)
+      JsonCodecMaker.make[Repr](CodecMakerConfig)
   }
 }

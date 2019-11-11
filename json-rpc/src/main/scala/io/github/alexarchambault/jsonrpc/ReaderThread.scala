@@ -7,11 +7,10 @@ import java.{util => ju}
 import java.util.concurrent.atomic.AtomicBoolean
 
 import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros._
 import com.typesafe.scalalogging.Logger
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 // Large parts of the `run` methods were adapted from
 // https://github.com/sbt/sbt/blob/2f31849c64957592d992a55c71b0bfe393166681/main/src/main/scala/sbt/internal/server/NetworkChannel.scala
@@ -141,7 +140,7 @@ final class ReaderThread(
 
   private def handleBody(buf: Array[Byte], offset: Int, len: Int): Unit = {
     log.debug(s"handleBody(${Try(new String(buf, offset, len))})")
-    deserializeJsonMessage(buf, offset, len) match {
+    JsonRpcMessage.deserialize(buf, offset, len) match {
       case Right(msg) =>
         log.debug(s"Received $msg")
         onMessage(msg) match {
@@ -231,45 +230,4 @@ object ReaderThread {
   private case object SingleLine extends ChannelState
   private case object InHeader extends ChannelState
   private case object InBody extends ChannelState
-
-  private final case class Probe(method: Option[String], id: Option[String])
-  private object Probe {
-    implicit val codec: JsonValueCodec[Probe] =
-      JsonCodecMaker.make(CodecMakerConfig)
-  }
-
-  private def deserializeJsonMessage(buf: Array[Byte], offset: Int, len: Int): Either[String, JsonRpcMessage] =
-    Try(readFromSubArray[Probe](buf, offset, offset + len)) match {
-      case Failure(t) =>
-        log.debug("Could not probe message", t)
-        Left("Malformed message")
-      case Success(check) =>
-        val hasMethod = check.method.nonEmpty
-        if (hasMethod) {
-          val hasId = check.id.nonEmpty
-          if (hasId)
-            Try(readFromSubArray[JsonRpcMessage.Request](buf, offset, offset + len)) match {
-              case Failure(t) =>
-                log.debug("Could not decode request", t)
-                Left("Malformed request")
-              case Success(req) =>
-                Right(req)
-            }
-          else
-            Try(readFromSubArray[JsonRpcMessage.Notification](buf, offset, offset + len)) match {
-              case Failure(t) =>
-                log.debug("Could not decode notification", t)
-                Left("Malformed notification")
-              case Success(notif) =>
-                Right(notif)
-            }
-        } else
-          Try(readFromSubArray[JsonRpcMessage.Response](buf, offset, offset + len)) match {
-            case Failure(t) =>
-              log.debug("Could not decode response", t)
-              Left("Malformed response")
-            case Success(resp) =>
-              Right(resp)
-          }
-    }
 }
