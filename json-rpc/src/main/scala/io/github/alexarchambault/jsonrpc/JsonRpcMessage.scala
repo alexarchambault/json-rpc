@@ -3,8 +3,6 @@ package io.github.alexarchambault.jsonrpc
 import java.nio.charset.StandardCharsets
 import java.{util => ju}
 
-import com.github.plokhotnyuk.jsoniter_scala.macros._
-import com.github.plokhotnyuk.jsoniter_scala.core._
 import scala.util.hashing.MurmurHash3
 import scala.util.Try
 import com.typesafe.scalalogging.Logger
@@ -34,6 +32,7 @@ object JsonRpcMessage {
   }
 
   object RawJson {
+    import com.github.plokhotnyuk.jsoniter_scala.core._
     implicit val codec: JsonValueCodec[RawJson] = new JsonValueCodec[RawJson] {
       def decodeValue(in: JsonReader, default: RawJson): RawJson =
         new RawJson(in.readRawValAsBytes())
@@ -148,6 +147,8 @@ object JsonRpcMessage {
   private final case class Probe(method: Option[String], id: Option[String])
 
   private object Codecs {
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import com.github.plokhotnyuk.jsoniter_scala.macros._
     implicit val responseCodec: JsonValueCodec[Response] =
       JsonCodecMaker.make[Response](CodecMakerConfig)
     implicit val requestCodec: JsonValueCodec[Request] =
@@ -162,6 +163,7 @@ object JsonRpcMessage {
 
   implicit final class Ops(private val msg: JsonRpcMessage) extends AnyVal {
     def serialize: Array[Byte] = {
+      import com.github.plokhotnyuk.jsoniter_scala.core._
       import Codecs._
       val raw = msg match {
         case n: Notification => writeToArray(n)
@@ -175,6 +177,7 @@ object JsonRpcMessage {
   private val log = Logger(classOf[JsonRpcMessage])
 
   def deserialize(buf: Array[Byte], offset: Int, len: Int): Either[String, JsonRpcMessage] = {
+    import com.github.plokhotnyuk.jsoniter_scala.core._
     import Codecs._
     Try(readFromSubArray[Probe](buf, offset, offset + len)) match {
       case Failure(t) =>
