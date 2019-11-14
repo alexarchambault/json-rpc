@@ -1,8 +1,5 @@
 package io.github.alexarchambault.jsonrpc
 
-import com.github.plokhotnyuk.jsoniter_scala.core._
-import com.github.plokhotnyuk.jsoniter_scala.macros._
-
 final class RemoteException(remoteException: Seq[(String, Seq[String])])
   extends Exception("Remote exception:\n" + RemoteException.Repr(remoteException).format)
 
@@ -42,6 +39,9 @@ object RemoteException {
 
       Repr(helper(t).toVector)
     }
+
+    import com.github.plokhotnyuk.jsoniter_scala.core._
+    import com.github.plokhotnyuk.jsoniter_scala.macros._
 
     implicit val codec: JsonValueCodec[Repr] =
       JsonCodecMaker.make[Repr](CodecMakerConfig)
